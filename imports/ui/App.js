@@ -60,19 +60,26 @@ class App extends Component {
           scrollsPageOnFocus: false,
           "undoManager.isEnabled": true  // enable undo & redo
         });
+        var ob=Tasks.find().fetch();
+        console.log(ob);
+        if(this.props.tasks.length>0){
+          myDiagram.model=go.Model.fromJson(this.props.tasks[this.props.tasks.length-1].aux);
+        }
 
-    // when the document is modified, add a "*" to the title and enable the "Save" button
-    myDiagram.addDiagramListener("ChangedSelection", function (e) {
-      debugger;
-      if(_id!=undefined){
-        Tasks.remove({_id});
+    myDiagram.addModelChangedListener(function(evt) {
+      if (!evt.isTransactionFinished) return;
+      var txn = evt.object; 
+      if (txn === null) return;
 
-      }
-     var aux=myDiagram.model.toJson();
-     Tasks.insert({aux});
-   //   var ob=Tasks.find().fetch();
-  //    _id=ob[0]._id;
-    //  console.log(ob);
+      txn.changes.each(function(e) {
+        if (e.modelChange !== "nodeDataArray") return;
+        if (e.change === go.ChangedEvent.Insert || e.change === go.ChangedEvent.Remove) {
+          var aux=myDiagram.model.toJson();
+          Tasks.insert({aux});
+          var ob=Tasks.find().fetch();
+          console.log(ob);
+        }
+      });
     });
     function nodeStyle() {
       return [
@@ -251,10 +258,6 @@ class App extends Component {
     // temporary links used by LinkingTool and RelinkingTool are also orthogonal:
     myDiagram.toolManager.linkingTool.temporaryLink.routing = go.Link.Orthogonal;
     myDiagram.toolManager.relinkingTool.temporaryLink.routing = go.Link.Orthogonal;
-    debugger;
-    if(this.props.tasks.length>0){
-      myDiagram.model=go.Model.fromJson(this.props.tasks[this.props.tasks.length-1].aux);
-    }
 
     
     var myPalette =
